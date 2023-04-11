@@ -1,5 +1,12 @@
 module.exports = (sequelize, Datatypes) => {
-    const User = sequelize.define("users", {
+    const user = sequelize.define("Users", {
+
+      id: {
+        primaryKey: true,
+        autoIncrement: true,
+        type: Datatypes.INTEGER,
+        allowNull: false
+      },
       
       username: {
         type: Datatypes.STRING,
@@ -16,13 +23,9 @@ module.exports = (sequelize, Datatypes) => {
         type: Datatypes.STRING,
         allowNull: false
       },
-      resetPass:{
-        type: Datatypes.BOOLEAN,
-        // los valores boleanos a partir de la v5 fueron cambiado a 1 y 0 haciendo referencia a true y false
-        default: 0,
-      },
+      
     });
   
-    return User;
+    return user;
   };
 

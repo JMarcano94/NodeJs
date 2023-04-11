@@ -1,4 +1,4 @@
 module.exports = {
-    secret: "Mira-EstaVerga-Como-Arranca",
-    Secret_Email : "Ahora-Esta-Vaina-En-Correo"
+    secret: "probandopwd",
+   Secret_Email  : "deberiatenerencriptacion"
   };
