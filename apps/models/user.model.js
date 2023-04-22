@@ -23,7 +23,10 @@ module.exports = (sequelize, Datatypes) => {
         type: Datatypes.STRING,
         allowNull: false
       },
-      
+      resetPass: {
+        type: Datatypes.BOOLEAN,
+        default: false
+      }
     });
   
     return user;

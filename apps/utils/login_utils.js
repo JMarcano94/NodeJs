@@ -4,8 +4,8 @@ const { text } = require('body-parser');
 const saltRounds = 10
 const salt= bcrypt.genSaltSync(saltRounds);
 
-const generateHash = (text)=> {
-  return bcrypt.hashSync(text, salt);
+const generateHash = (data)=> {
+  return bcrypt.hashSync(data, salt);
 }
 
 

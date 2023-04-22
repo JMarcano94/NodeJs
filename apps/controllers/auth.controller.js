@@ -10,99 +10,117 @@ const Op = db.Sequelize.Op;
 
 var jwt = require("jsonwebtoken");
 var bcrypt = require("bcryptjs");
-const { password } = require("../models");
+
 
 require('dotenv').config()
 
-exports.signup = (req, res) => {
-  
-  const pwdHash=generateHash(password)
-  // guardando el usuario en la base de datos
-  User.create({
-    username: req.body.username,
-    email: req.body.email,
-    password: pwdHash
-  }) // verificando que el usuario ya no este registrado
-    .then(user => {
-      if (req.body.roles) {
-        Role.findAll({
-          where: {
-            name: {
-              [Op.or]: req.body.roles
-            }
-          }
-        }).then(roles => {
-          user.setRoles(roles).then(() => {
-            res.send({ message: "User was registered successfully!" });
-          });
-        });
-      } else {
-        // user role = 1
-        user.setRoles([1]).then(() => {
-          res.send({ message: "User was registered successfully!" });
-        });
-      }
-    })
-    .catch(err => {
-      res.status(500).send({ message: err.message });
-    });
-};
+async function signup(req, res) {
+  try {
+    const { username, email, password, roles } = req.body;
+    const hashedPassword = bcrypt.hashSync(password, 10);
 
+    const user = await createUser(username, email, hashedPassword);
+    const userRoles = roles ? await findRolesByName(roles) : [1];
+    await user.setRoles(userRoles);
+
+    return sendSuccessResponse(res, "User was registered successfully!");
+  } catch (error) {
+    return res.status(500).send({ message: error.message });
+  }
+}
+
+async function createUser(username, email, password) {
+  return await User.create({ username, email, password });
+}
+
+async function findRolesByName(roleNames) {
+  return await Role.findAll({
+    where: {
+      name: {
+        [Op.or]: roleNames,
+      },
+    },
+  });
+}
+
+function sendSuccessResponse(res, message) {
+  return res.send({ message });
+}
 
 
 //verificando credenciales del usuario
 
-exports.signin = (req, res) => {
-  User.findOne({
-    where: {
-      username: req.body.username
-    }
-  })
-    .then(user => {
-      if (!user) {
-        return res.status(404).send({ message: "User Not found." });
-      }
+async function signin(req, res) {
+  try {
+    const { username, password } = req.body;
+    const user = await findUserByUsername(username);
+    validateUser(user);
 
-      var passwordIsValid = bcrypt.compareSync(
-        req.body.password,
-        user.password
-      );
+    const passwordIsValid = validatePassword(password, user.password);
+    validatePasswordIsValid(passwordIsValid);
 
-      if (!passwordIsValid) {
-        return res.status(401).send({
-          accessToken: null,
-          message: "Invalid Password!"
-        });
-      }
+    const jwtToken = generateJwtToken(user);
+    const authorities = await verifyUserRoles(user);
 
-      //creando token para el logueo
-
-      var jwtToken = jwt.sign({ email: user.email}, config.secret, {
-        expiresIn: '1h' // 1 hora
-      });
-
-      //verificando roles del usuario
-
-      var authorities = [];
-      user.getRoles().then(roles => {
-        for (let i = 0; i < roles.length; i++) {
-          authorities.push("ROLE_" + roles[i].name.toUpperCase());
-        }
-        res.status(200).send({
-          id: user.id,
-          username: user.username,
-          email: user.email,
-          roles: authorities,
-          accessToken: jwtToken
-        });
-      });
-    })
-    .catch(err => {
-      res.status(500).send({ message: err.message });
+    return sendSuccessResponse(res, {
+      id: user.id,
+      username: user.username,
+      email: user.email,
+      roles: authorities,
+      accessToken: jwtToken
     });
+  } catch (error) {
+    return sendErrorResponse(res, error.message);
+  }
+}
+
+async function findUserByUsername(username) {
+  return await User.findOne({ where: { username } });
+}
+
+function validateUser(user) {
+  if (!user) {
+    throw new Error("User Not found.");
+  }
+}
+
+function validatePassword(password, hashedPassword) {
+  return bcrypt.compareSync(password, hashedPassword);
+}
+
+function validatePasswordIsValid(passwordIsValid) {
+  if (!passwordIsValid) {
+    throw new Error("Invalid Password!");
+  }
+}
+
+function generateJwtToken(user) {
+  return jwt.sign({ email: user.email }, config.secret, {
+    expiresIn: '1h'
+  });
+}
+
+async function verifyUserRoles(user) {
+  const authorities = [];
+  const roles = await user.getRoles();
+  for (let i = 0; i < roles.length; i++) {
+    authorities.push("ROLE_" + roles[i].name.toUpperCase());
+  }
+  return authorities;
+}
+
+function sendSuccessResponse(res, data) {
+  return res.status(200).send(data);
+}
+
+function sendErrorResponse(res, message) {
+  return res.status(500).send({ message });
 };
 
-
+module.exports= {
+  signin,
+  signup
+}
 
 
 

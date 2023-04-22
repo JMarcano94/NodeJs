@@ -18,7 +18,6 @@ verifyToken = (req, res, next) => {
         message: "Unauthorized!"
       });
     }
-    req.email = decoded.email;
     next();
   });
 };

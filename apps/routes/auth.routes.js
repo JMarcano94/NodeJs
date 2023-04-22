@@ -4,6 +4,7 @@ const resetPwd = require("../controllers/forgotPasswordController");
 const resetUserpwd = require('../controllers/ResetPassword')
 
 var express = require('express');
+const req = require("express/lib/request");
 var router = express.Router();
 
 module.exports = function(router) {
@@ -37,20 +38,26 @@ module.exports = function(router) {
    resetPwd .forgetPassword
   );
 
+  //ruta para reiniciar la contraseña 
+
+  router.patch("/api/auth/change-password/:token",
+   
+  [
+    verifySignUp.checkNullValue,
+  ],
+  resetUserpwd.ChangePasswordEmail
+   // código para verificar el token y mostrar la página de reinicio de contraseña
+  );
+  
+
 };
 
 
 
-  //ruta para reiniciar la contraseña 
  
-router.put('/api/reset-password/:token', [
-  verifySignUp.checkNullValue,
-  authJwt.verifyToken
-],
-resetUserpwd.ChangePasswordEmail
 
 
-  // código para verificar el token y mostrar la página de reinicio de contraseña
-);
+
+ 
 
 
